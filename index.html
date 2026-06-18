@@ -31,8 +31,10 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            min-height: -webkit-fill-available; /* 解決 iOS 高度適應問題 */
             font-family: 'Comfortaa', 'Noto Sans TC', sans-serif;
-            overflow-x: hidden;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
 
         /* 手機與平板專用的自適應高彈性容器 */
@@ -44,9 +46,22 @@
             overflow: hidden;
             border: 4px solid #FFFFFF;
             width: 100%;
-            max-width: 450px;       /* 適合手機與平板的最佳黃金寬度 */
+            max-width: 420px;       /* 適合手機與平板的最佳黃金寬度 */
             aspect-ratio: 500 / 650; /* 鎖定原始設計寬高比，不跑版 */
+            max-height: calc(100vh - 40px); /* 當螢幕高度被虛擬鍵盤壓縮時，容器會自動等比例縮小 */
             margin: auto;
+            transition: max-height 0.2s ease;
+        }
+
+        /* 當手機虛擬鍵盤彈出，可見高度縮小時，切換為置頂對齊，防遮擋 */
+        @media (max-height: 600px) {
+            body {
+                align-items: flex-start;
+                padding-top: 8px;
+            }
+            #canvasWrapper {
+                max-height: calc(100vh - 16px);
+            }
         }
 
         canvas {
@@ -56,7 +71,7 @@
             background: transparent;
         }
 
-        /* 浮動拼字輸入框：百分百由 CSS 自適應控制高度 (28%) 與寬度，防止被鍵盤遮擋 */
+        /* 浮動拼字輸入框：百分百由 CSS 自適應控制高度，type="email" 可強制手機彈出英文鍵盤 */
         #spellingInput {
             position: absolute;
             display: none;
@@ -88,11 +103,11 @@
 <div id="canvasWrapper">
     <canvas id="appCanvas" width="500" height="650"></canvas>
     
-    <!-- 拼字輸入框：強制在行動裝置預設跳出「英文鍵盤」 -->
-    <input type="text" id="spellingInput" lang="en" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="請拼出這個英文單字...">
+    <!-- spellingInput 改用 type="email" 與 inputmode="email" 達成 100% 強制預設啟動英文輸入鍵盤 -->
+    <input type="email" id="spellingInput" lang="en" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="請拼出這個英文單字...">
 </div>
 
-<!-- 客製化清新馬卡龍彈出式視窗 (取代傳統 alert，極致美學不跳框) -->
+<!-- 客製化溫馨 Modal -->
 <div id="customModal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-4 border-pink-100 shadow-2xl transform scale-95 transition-transform duration-300">
         <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -107,7 +122,7 @@
 </div>
 
 <script>
-    // 完整單字資料庫（精確補齊所有動詞之三態 verbs 欄位）
+    // 完整單字資料庫（包含所有動詞之詳細三態變化）
     const VOCABULARY = {
         5: [
             { word: "science", clean: "science", pos: "名", trans: "科學", sentence: "Science is my favorite subject.", sentenceZh: "科學是我在學校最喜歡的科目。" },
@@ -253,7 +268,7 @@
         }
     }
 
-    // 音效管理器
+    // 音效播放
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playChime(success) {
         const osc = audioCtx.createOscillator();
@@ -279,7 +294,7 @@
         }
     }
 
-    // 語音發音
+    // 發音發聲
     function speakBaseWord(text) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -613,7 +628,7 @@
         ctx.font = '700 24px "Noto Sans TC"';
         ctx.fillText(`【${activeQ.pos}】 ${activeQ.trans}`, 250, 110);
 
-        // 啟用並顯示輸入框 (百分百由 RWD CSS 靜態對齊定位)
+        // 顯示輸入框 (SpellingInput 透過 CSS 自動定位)
         spellingInput.style.display = 'block';
 
         // 送出答案與放棄按鈕向上集中
@@ -699,9 +714,8 @@
         let activeWord = fcList[fcIndex];
 
         if (!known) {
-            let targetPos = fcIndex + Math.floor(Math.random() * 3) + 3;
-            if (targetPos > fcList.length) targetPos = fcList.length;
-            fcList.splice(targetPos, 0, activeWord);
+            // 還不熟：不再是隨機位置，而是直接追加(Push)到隊伍的最後面
+            fcList.push(activeWord);
             fcIndex++;
         } else {
             spawnCelebrationBurst(250, 250);
@@ -744,7 +758,7 @@
         let targetWord = target.word.toLowerCase();
 
         if (guess === targetClean || guess === targetWord || (guess === 'surf the net' && targetClean === 'surf the internet')) {
-            spawnCelebrationBurst(250, 140); // 爆裂粒子位置同步上推
+            spawnCelebrationBurst(250, 110); // 爆裂位置與題目對齊
             playChime(true);
 
             if (target.perfectEntry) {
