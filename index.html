@@ -71,14 +71,24 @@
             background: transparent;
         }
 
-        /* 浮動拼字輸入框：百分百由 CSS 自適應控制高度，type="email" 可強制手機彈出英文鍵盤 */
-        #spellingInput {
+        /* 水平並排輸入組：完美避開鍵盤高度，且與 Canvas 精準等比例縮放 */
+        #quizInputGroup {
             position: absolute;
+            left: 10%;
+            top: 25%;
+            width: 80%;
+            height: 8.5%;
             display: none;
-            left: 15%;
-            top: 28%;
-            width: 70%;
-            height: 7.5%;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        /* 拼字輸入框：inputmode="url" 在現代智慧型裝置上具備極高優先權，強制鍵盤以英文（Latin）開啟 */
+        #spellingInput {
+            width: 72%;
+            height: 100%;
             border: 3px solid #FFD1D1;
             border-radius: 20px;
             font-size: 18px; /* 大於 16px 防止 iOS 瀏覽器自動縮放 */
@@ -89,12 +99,31 @@
             background: #FFF9F9;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
             transition: border-color 0.3s, box-shadow 0.3s;
-            z-index: 50;
         }
 
         #spellingInput:focus {
             border-color: #FFB7B2;
             box-shadow: 0 0 8px rgba(255, 183, 178, 0.6);
+        }
+
+        /* 與輸入框並排之實體 HTML 送出按鈕，體驗流暢、不擋不跑位 */
+        #quizSubmitBtn {
+            width: 25%;
+            height: 100%;
+            background: linear-gradient(135deg, #FFB7B2 0%, #FF9AA2 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Noto Sans TC', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 183, 178, 0.3);
+            transition: transform 0.1s active;
+        }
+
+        #quizSubmitBtn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -103,8 +132,11 @@
 <div id="canvasWrapper">
     <canvas id="appCanvas" width="500" height="650"></canvas>
     
-    <!-- spellingInput 改用 type="email" 與 inputmode="email" 達成 100% 強制預設啟動英文輸入鍵盤 -->
-    <input type="email" id="spellingInput" lang="en" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="請拼出這個英文單字...">
+    <!-- 水平並排輸入與送出按鈕群 -->
+    <div id="quizInputGroup">
+        <input type="text" id="spellingInput" lang="en" inputmode="url" pattern="[A-Za-z]*" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="拼寫單字...">
+        <button id="quizSubmitBtn">送出</button>
+    </div>
 </div>
 
 <!-- 客製化溫馨 Modal -->
@@ -220,6 +252,7 @@
     const canvas = document.getElementById('appCanvas');
     const ctx = canvas.getContext('2d');
     const spellingInput = document.getElementById('spellingInput');
+    const quizInputGroup = document.getElementById('quizInputGroup');
     let particles = [];
     let floatingElements = []; 
     let buttonRegions = [];
@@ -406,7 +439,7 @@
         buttonRegions = [];
 
         if (appState !== 'QUIZ') {
-            spellingInput.style.display = 'none';
+            quizInputGroup.style.display = 'none';
         }
 
         // 背景
@@ -628,13 +661,12 @@
         ctx.font = '700 24px "Noto Sans TC"';
         ctx.fillText(`【${activeQ.pos}】 ${activeQ.trans}`, 250, 110);
 
-        // 顯示輸入框 (SpellingInput 透過 CSS 自動定位)
-        spellingInput.style.display = 'block';
+        // 顯示 HTML 水平並排輸入組
+        quizInputGroup.style.display = 'flex';
 
-        // 送出答案與放棄按鈕向上集中
-        drawCuteButton('QZ_SUBMIT', '送出答案', 150, 260, 200, 48, '#FFB7B2', '#FFA4A0', submitSpellingAnswer);
-        drawCuteButton('QZ_EXIT', '放棄測驗', 170, 325, 160, 40, '#C7CEEA', '#B9C2E7', () => {
-            spellingInput.style.display = 'none';
+        // 只繪製一個「放棄測驗」按鈕在 Canvas 下方
+        drawCuteButton('QZ_EXIT', '放棄測驗', 170, 355, 160, 40, '#C7CEEA', '#B9C2E7', () => {
+            quizInputGroup.style.display = 'none';
             appState = 'MODE_SELECT';
         });
     }
@@ -714,7 +746,7 @@
         let activeWord = fcList[fcIndex];
 
         if (!known) {
-            // 還不熟：不再是隨機位置，而是直接追加(Push)到隊伍的最後面
+            // 還不熟：直接追加到隊伍的最後面，達成完美的大循環
             fcList.push(activeWord);
             fcIndex++;
         } else {
@@ -769,7 +801,7 @@
             spellingInput.value = "";
 
             if (qIndex >= qList.length) {
-                spellingInput.style.display = 'none';
+                quizInputGroup.style.display = 'none';
                 appState = 'SCOREBOARD';
             } else {
                 setTimeout(() => spellingInput.focus(), 50);
@@ -810,6 +842,9 @@
             }
         }
     });
+
+    // 點擊 HTML 送出按鈕時觸發
+    document.getElementById('quizSubmitBtn').addEventListener('click', submitSpellingAnswer);
 
     spellingInput.addEventListener('keyup', function(e) {
         if (e.key === 'Enter') {
