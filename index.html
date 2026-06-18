@@ -56,13 +56,13 @@
             background: transparent;
         }
 
-        /* 浮動拼字輸入框：採用響應式百分比定位，無論螢幕大小皆能完美貼合 Canvas 上的提示位置 */
+        /* 浮動拼字輸入框：百分百由 CSS 自適應控制高度 (28%) 與寬度，防止被鍵盤遮擋 */
         #spellingInput {
             position: absolute;
             display: none;
-            left: 16%;
-            top: 38.5%;
-            width: 68%;
+            left: 15%;
+            top: 28%;
+            width: 70%;
             height: 7.5%;
             border: 3px solid #FFD1D1;
             border-radius: 20px;
@@ -74,6 +74,7 @@
             background: #FFF9F9;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
             transition: border-color 0.3s, box-shadow 0.3s;
+            z-index: 50;
         }
 
         #spellingInput:focus {
@@ -87,8 +88,8 @@
 <div id="canvasWrapper">
     <canvas id="appCanvas" width="500" height="650"></canvas>
     
-    <!-- 拼字輸入框 -->
-    <input type="text" id="spellingInput" autocomplete="off" placeholder="請拼出這個英文單字...">
+    <!-- 拼字輸入框：強制在行動裝置預設跳出「英文鍵盤」 -->
+    <input type="text" id="spellingInput" lang="en" inputmode="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="請拼出這個英文單字...">
 </div>
 
 <!-- 客製化清新馬卡龍彈出式視窗 (取代傳統 alert，極致美學不跳框) -->
@@ -106,13 +107,12 @@
 </div>
 
 <script>
-    // --- STREAMING_CHUNK: Initializing vocabulary dataset for B2 Lesson 5 and 6... ---
-    // 完整單字資料庫（精確對應課文圖片內容與動詞不規則變化）
+    // 完整單字資料庫（精確補齊所有動詞之三態 verbs 欄位）
     const VOCABULARY = {
         5: [
-            { word: "science", clean: "science", pos: "名", trans: "科學", sentence: "Science is my favorite subject.", sentenceZh: "科學是我最喜歡的科目。" },
-            { word: "camp", clean: "camp", pos: "名;動", trans: "營隊;露營", sentence: "We will camp near the lake this weekend.", sentenceZh: "我們這週末要在湖邊露營。" },
-            { word: "visit", clean: "visit", pos: "動;名", trans: "造訪;拜訪", sentence: "I want to visit my grandparents tomorrow.", sentenceZh: "我明天想去拜訪我的祖父母。" },
+            { word: "science", clean: "science", pos: "名", trans: "科學", sentence: "Science is my favorite subject.", sentenceZh: "科學是我在學校最喜歡的科目。" },
+            { word: "camp", clean: "camp", pos: "名;動", trans: "營隊;露營", verbs: "camp - camped - camped", sentence: "We will camp near the lake this weekend.", sentenceZh: "我們這週末要在湖邊露營。" },
+            { word: "visit", clean: "visit", pos: "動;名", trans: "造訪;拜訪", verbs: "visit - visited - visited", sentence: "I want to visit my grandparents tomorrow.", sentenceZh: "我明天想去拜訪我的祖父母。" },
             { word: "art", clean: "art", pos: "名", trans: "藝術;美術", sentence: "She loves drawing and art class.", sentenceZh: "她非常喜歡繪畫和美術課。" },
             { word: "museum", clean: "museum", pos: "名", trans: "博物館", sentence: "The science museum is very famous.", sentenceZh: "這間科學博物館非常有名。" },
             { word: "ago", clean: "ago", pos: "副", trans: "……之前", sentence: "He left the school ten minutes ago.", sentenceZh: "他十分鐘前離開了學校。" },
@@ -130,17 +130,17 @@
             { word: "so", clean: "so", pos: "副", trans: "很；那麼", sentence: "I am so happy to meet you here.", sentenceZh: "能在這裡遇見你我真的很開心。" },
             { word: "just", clean: "just", pos: "副", trans: "就；恰好；剛剛", sentence: "I have just finished my homework.", sentenceZh: "我剛剛才寫完我的作業。" },
             { word: "later", clean: "later", pos: "副", trans: "稍後", sentence: "I will call you back later.", sentenceZh: "我晚點會再回撥給你。" },
-            { word: "save", clean: "save", pos: "動", trans: "拯救；省下；儲存", sentence: "We must save water every day.", sentenceZh: "我們每天都必須節約用水。" },
-            { word: "share", clean: "share", pos: "動", trans: "分享", sentence: "Please share this delicious pizza.", sentenceZh: "請分享這款美味的披薩。" },
+            { word: "save", clean: "save", pos: "動", trans: "拯救；省下；儲存", verbs: "save - saved - saved", sentence: "We must save water every day.", sentenceZh: "我們每天都必須節約用水。" },
+            { word: "share", clean: "share", pos: "動", trans: "分享", verbs: "share - shared - shared", sentence: "Please share this delicious pizza.", sentenceZh: "請分享這款美味的披薩。" },
             { word: "snack", clean: "snack", pos: "名", trans: "點心", sentence: "Would you like some sweet snacks?", sentenceZh: "你想來點甜點心嗎？" },
-            { word: "climb", clean: "climb", pos: "動", trans: "攀爬", sentence: "Monkeys are very good at climbing trees.", sentenceZh: "猴子非常擅長爬樹。" },
-            { word: "kid", clean: "kid", pos: "動;名", trans: "開玩笑；小孩", sentence: "Don't be serious; I'm just kidding.", sentenceZh: "別認真，我只是開玩笑的。" },
-            { word: "explain", clean: "explain", pos: "動", trans: "解釋", sentence: "Can you explain this math rule to me?", sentenceZh: "你能向我解釋這個數學規則嗎？" },
+            { word: "climb", clean: "climb", pos: "動", trans: "攀爬", verbs: "climb - climbed - climbed", sentence: "Monkeys are very good at climbing trees.", sentenceZh: "猴子非常擅長爬樹。" },
+            { word: "kid", clean: "kid", pos: "動;名", trans: "開玩笑；小孩", verbs: "kid - kidded - kidded", sentence: "Don't be serious; I'm just kidding.", sentenceZh: "別認真，我只是開玩笑的。" },
+            { word: "explain", clean: "explain", pos: "動", trans: "解釋", verbs: "explain - explained - explained", sentence: "Can you explain this math rule to me?", sentenceZh: "你能向我解釋這個數學規則嗎？" },
             { word: "leftovers", clean: "leftovers", pos: "名", trans: "剩菜", sentence: "We can heat up the leftovers for lunch.", sentenceZh: "我們可以加熱剩菜當午餐。" },
             { word: "hide-and-seek", clean: "hide-and-seek", pos: "名", trans: "捉迷藏", sentence: "Let's play hide-and-seek in the yard.", sentenceZh: "我們在院子裡玩捉迷藏吧。" },
             { word: "wise", clean: "wise", pos: "形", trans: "有智慧的", sentence: "My grandfather always gives wise advice.", sentenceZh: "我祖父總是能給出明智的建議。" },
-            { word: "hunt", clean: "hunt", pos: "動", trans: "打獵", sentence: "Wolves hunt in groups.", sentenceZh: "狼群集體打獵。" },
-            { word: "learn", clean: "learn", pos: "動", trans: "學習；得知", sentence: "I want to learn how to play guitar.", sentenceZh: "我想要學習怎麼彈吉他。" },
+            { word: "hunt", clean: "hunt", pos: "動", trans: "打獵", verbs: "hunt - hunted - hunted", sentence: "Wolves hunt in groups.", sentenceZh: "狼群集體打獵。" },
+            { word: "learn", clean: "learn", pos: "動", trans: "學習；得知", verbs: "learn - learned - learned", sentence: "I want to learn how to play guitar.", sentenceZh: "我想要學習怎麼彈吉他。" },
             { word: "in the end", clean: "in the end", pos: "片語", trans: "最後", sentence: "In the end, they resolved the problem.", sentenceZh: "最後，他們解決了這個問題。" }
         ],
         6: [
@@ -151,7 +151,7 @@
             { word: "river", clean: "river", pos: "名", trans: "河", sentence: "The river flows through my town.", sentenceZh: "這條河流過我的小鎮。" },
             { word: "hill", clean: "hill", pos: "名", trans: "小山；丘陵", sentence: "There is a house on the green hill.", sentenceZh: "那座綠色的小山丘上有一間屋子。" },
             { word: "pond", clean: "pond", pos: "名", trans: "池塘", sentence: "Some frogs are croaking in the pond.", sentenceZh: "幾隻青蛙在池塘裡呱呱叫。" },
-            { word: "hike", clean: "hike", pos: "動", trans: "健行", sentence: "We love to hike in autumn.", sentenceZh: "我們喜歡在秋天去健行。" },
+            { word: "hike", clean: "hike", pos: "動", trans: "健行", verbs: "hike - hiked - hiked", sentence: "We love to hike in autumn.", sentenceZh: "我們喜歡在秋天去健行。" },
             { word: "swim / swam", clean: "swim", pos: "動", trans: "游泳", verbs: "swim - swam - swum", sentence: "He swam in the swimming pool yesterday.", sentenceZh: "他昨天在游泳池裡游泳。" },
             { word: "airport", clean: "airport", pos: "名", trans: "機場", sentence: "Our plane landed safely at the airport.", sentenceZh: "我們的飛機安全降落在機場。" },
             { word: "bright", clean: "bright", pos: "形", trans: "明亮的；晴朗的", sentence: "The room is bright with big windows.", sentenceZh: "有大窗戶的房間格外明亮。" },
@@ -162,10 +162,10 @@
             { word: "plastic", clean: "plastic", pos: "形;名", trans: "塑膠的；塑膠", sentence: "Don't use too many plastic cups.", sentenceZh: "別使用太多塑膠杯。" },
             { word: "keep / kept", clean: "keep", pos: "動", trans: "保留；保持", verbs: "keep - kept - kept", sentence: "Keep your hands warm in winter.", sentenceZh: "冬天記得保持雙手溫暖。" },
             { word: "throw / threw... away", clean: "throw away", pos: "動", trans: "扔掉……", verbs: "throw - threw - thrown", sentence: "I threw away my old broken schoolbag.", sentenceZh: "我扔掉了我破舊的舊書包。" },
-            { word: "start", clean: "start", pos: "動;名", trans: "開始", sentence: "When will the movie start?", sentenceZh: "電影什麼時候開始？" },
+            { word: "start", clean: "start", pos: "動;名", trans: "開始", verbs: "start - started - started", sentence: "When will the movie start?", sentenceZh: "電影什麼時候開始？" },
             { word: "begin / began", clean: "begin", pos: "動", trans: "開始", verbs: "begin - began - begun", sentence: "The test began at nine o'clock.", sentenceZh: "考試於九點整開始。" },
             { word: "elementary school", clean: "elementary school", pos: "名", trans: "小學", sentence: "She is a sweet teacher in elementary school.", sentenceZh: "她是小學裡一位溫柔的老師。" },
-            { word: "hate", clean: "hate", pos: "動", trans: "討厭；憎恨", sentence: "I hate eating onions.", sentenceZh: "我討厭吃洋蔥。" },
+            { word: "hate", clean: "hate", pos: "動", trans: "討厭；憎恨", verbs: "hate - hated - hated", sentence: "I hate eating onions.", sentenceZh: "我討厭吃洋蔥。" },
             { word: "amazing", clean: "amazing", pos: "形", trans: "令人驚喜的", sentence: "The magic show was truly amazing.", sentenceZh: "這場魔術表演真的令人感到驚喜。" },
             { word: "law", clean: "law", pos: "名", trans: "法律", sentence: "Everyone must obey the traffic law.", sentenceZh: "每個人都必須遵守交通法規。" },
             { word: "-free", clean: "-free", pos: "形", trans: "(用於詞尾)無……的", sentence: "The beach is a clean trash-free area.", sentenceZh: "這片沙灘是一個乾淨、無垃圾的區域。" },
@@ -175,8 +175,8 @@
             { word: "hospital", clean: "hospital", pos: "名", trans: "醫院", sentence: "He stayed in the hospital for two days.", sentenceZh: "他在醫院住了兩天。" },
             { word: "package", clean: "package", pos: "名", trans: "包裝；包裹", sentence: "The postman brought a big package.", sentenceZh: "郵差送來了一個大包裹。" },
             { word: "poor", clean: "poor", pos: "形", trans: "貧窮的；可憐的", sentence: "The poor kitten was lost in the cold.", sentenceZh: "那隻可憐的小貓在寒風中迷路了。" },
-            { word: "stop", clean: "stop", pos: "動;名", trans: "停止", sentence: "Please stop talking and open your book.", sentenceZh: "請停止說話並翻開書。" },
-            { word: "collect", clean: "collect", pos: "動", trans: "收集", sentence: "She likes to collect beautiful leaves.", sentenceZh: "她喜歡收集美麗的落葉。" },
+            { word: "stop", clean: "stop", pos: "動;名", trans: "停止", verbs: "stop - stopped - stopped", sentence: "Please stop talking and open your book.", sentenceZh: "請停止說話並翻開書。" },
+            { word: "collect", clean: "collect", pos: "動", trans: "收集", verbs: "collect - collected - collected", sentence: "She likes to collect beautiful leaves.", sentenceZh: "她喜歡收集美麗的落葉。" },
             { word: "half", clean: "half", pos: "名;形", trans: "一半(的)；二分之一", sentence: "Give me half of your apple, please.", sentenceZh: "請分給我一半的蘋果。" },
             { word: "million", clean: "million", pos: "名", trans: "百萬", sentence: "Over one million people visited the island.", sentenceZh: "超過一百萬人造訪了這座島嶼。" },
             { word: "lead / led", clean: "lead", pos: "動", trans: "領導", verbs: "lead - led - led", sentence: "She led us to the correct classroom.", sentenceZh: "她帶領我們走到了正確的教室。" },
@@ -184,16 +184,16 @@
         ]
     };
 
-    // --- STREAMING_CHUNK: Setting up system states and particle systems... ---
+    // 系統變數初始化
     let appState = 'MAIN_MENU'; // MAIN_MENU, MODE_SELECT, FLASHCARD, QUIZ, SCOREBOARD
     let selectedLesson = 5;
 
     // 單字卡模式狀態
     let fcList = [];
     let fcIndex = 0;
-    let cardFlipAngle = 0;      // 0 ~ 180 度代表卡片翻轉弧度
-    let isFlipped = false;       // 目前是否顯示背面
-    let isAnimating = false;    // 卡片翻頁中
+    let cardFlipAngle = 0;      
+    let isFlipped = false;       
+    let isAnimating = false;    
 
     // 拼字測驗模式狀態
     let qList = [];
@@ -206,10 +206,9 @@
     const ctx = canvas.getContext('2d');
     const spellingInput = document.getElementById('spellingInput');
     let particles = [];
-    let floatingElements = []; // 背景漂浮心形和星星
+    let floatingElements = []; 
     let buttonRegions = [];
 
-    // --- STREAMING_CHUNK: Designing custom elegant modal (replacing alert)... ---
     // 自製客製化彈出式視窗控制函式
     function showCuteModal(title, text, type = 'info', callback = null) {
         document.getElementById('modalTitle').innerText = title;
@@ -240,7 +239,6 @@
         });
     }
 
-    // --- STREAMING_CHUNK: Initializing background particles & sound effects... ---
     function initFloatingBackground() {
         floatingElements = [];
         for (let i = 0; i < 8; i++) {
@@ -255,7 +253,7 @@
         }
     }
 
-    // 音效管理器 (Web Audio API)
+    // 音效管理器
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playChime(success) {
         const osc = audioCtx.createOscillator();
@@ -266,33 +264,32 @@
         if (success) {
             osc.type = 'sine';
             gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-            osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.15); // G5
-            osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.3); // C6
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+            osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.15); 
+            osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.3); 
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
             osc.start(); osc.stop(audioCtx.currentTime + 0.5);
         } else {
             osc.type = 'triangle';
             gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(293.66, audioCtx.currentTime); // D4
-            osc.frequency.linearRampToValueAtTime(196.00, audioCtx.currentTime + 0.25); // G3
+            osc.frequency.setValueAtTime(293.66, audioCtx.currentTime); 
+            osc.frequency.linearRampToValueAtTime(196.00, audioCtx.currentTime + 0.25); 
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
             osc.start(); osc.stop(audioCtx.currentTime + 0.4);
         }
     }
 
-    // 原生語音合成發音 (TTS)
+    // 語音發音
     function speakBaseWord(text) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const speech = new SpeechSynthesisUtterance(text);
             speech.lang = 'en-US';
-            speech.rate = 0.82; // 稍微放慢以提高清晰度
+            speech.rate = 0.82; 
             window.speechSynthesis.speak(speech);
         }
     }
 
-    // --- STREAMING_CHUNK: Coding custom Canvas drawing utilities... ---
     function drawRoundedRect(x, y, w, h, r, fillColor, strokeColor, shadow = false) {
         ctx.save();
         if (shadow) {
@@ -333,7 +330,6 @@
         buttonRegions.push({ id, x, y, w, h, onClick });
     }
 
-    // 文字換行算法
     function drawTextWrapped(text, x, y, maxWidth, lineHeight, color, fontSpec) {
         ctx.fillStyle = color;
         ctx.font = fontSpec;
@@ -355,7 +351,6 @@
         return currentY;
     }
 
-    // --- STREAMING_CHUNK: Coding hand-drawn particle pop explosion... ---
     function spawnCelebrationBurst(x, y) {
         const colors = ['#FFB7B2', '#FF9AA2', '#B5EAD7', '#FFDAC1', '#E2F0CB'];
         for (let i = 0; i < 30; i++) {
@@ -391,24 +386,22 @@
         ctx.fill();
     }
 
-    // --- STREAMING_CHUNK: Rendering Core App Game Loop... ---
     function updateAndDraw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         buttonRegions = [];
 
-        // 確保在非測驗模式下隱藏輸入框，避免覆蓋畫面
         if (appState !== 'QUIZ') {
             spellingInput.style.display = 'none';
         }
 
-        // 1. 繪製精美背景漸層
+        // 背景
         let bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
         bgGradient.addColorStop(0, '#FFF5F5');
         bgGradient.addColorStop(1, '#EEF5FF');
         ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 2. 繪製並更新漂浮背景元素
+        // 背景漂浮物
         ctx.fillStyle = 'rgba(255, 183, 178, 0.15)';
         floatingElements.forEach(item => {
             item.y -= item.speedY;
@@ -421,7 +414,6 @@
             drawCustomShape(ctx, currentX, item.y, item.size, item.type);
         });
 
-        // 3. 依據狀態進行介面渲染
         switch (appState) {
             case 'MAIN_MENU':
                 renderMainMenu();
@@ -440,12 +432,12 @@
                 break;
         }
 
-        // 4. 更新並繪製爆炸粒子
+        // 爆炸粒子
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i];
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.1; // 重力效果
+            p.vy += 0.1; 
             p.alpha -= p.decay;
             if (p.alpha <= 0) {
                 particles.splice(i, 1);
@@ -461,7 +453,6 @@
         requestAnimationFrame(updateAndDraw);
     }
 
-    // --- STREAMING_CHUNK: Drawing Main Menu and Mode Options... ---
     function renderMainMenu() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -518,9 +509,7 @@
         drawCuteButton('MODE_BACK', '返回主單元選單', 150, 440, 200, 45, '#E2F0CB', '#D4E8B7', () => { appState = 'MAIN_MENU'; });
     }
 
-    // --- STREAMING_CHUNK: Coding the 3D flipping Flashcard render logic... ---
     function renderFlashcard() {
-        // 安全越界防禦機制：避免卡片 index 在切換極短時間內產生 undefined crash 
         if (fcIndex >= fcList.length || fcList.length === 0) {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -563,17 +552,19 @@
             ctx.fillStyle = '#4285F4';
             ctx.fillText(word.pos, 0, 22);
 
-            if (word.verbs) {
+            // 完美的動詞三態呈現
+            if (word.verbs || word.pos.includes("動")) {
+                let verbsText = word.verbs ? word.verbs : `${word.word} - ${word.word}ed - ${word.word}ed`;
                 ctx.font = 'italic 500 13px "Comfortaa"';
-                ctx.fillStyle = '#999999';
-                ctx.fillText(`三態: ${word.verbs}`, 0, 60);
+                ctx.fillStyle = '#FF7B89';
+                ctx.fillText(`三態: ${verbsText}`, 0, 60);
             }
 
             ctx.font = '500 11px "Noto Sans TC"';
             ctx.fillStyle = '#D1C4E9';
             ctx.fillText('💡 點擊卡片任何地方即可翻面', 0, 105);
         } else {
-            // 背面：移除 ctx.scale(-1, 1) 以防止文字被鏡像反轉！
+            // 背面：移除任何鏡像文字，由左至右順暢閱讀
             drawRoundedRect(-180, -140, 360, 280, 28, '#FFF5F8', '#FFD1D1', true);
 
             ctx.fillStyle = '#4A4A4A';
@@ -604,7 +595,6 @@
         drawCuteButton('FC_EXIT', '回學習選單', 170, 520, 160, 40, '#D4E2F7', '#B9CEEB', () => { appState = 'MODE_SELECT'; });
     }
 
-    // --- STREAMING_CHUNK: Coding the Spelling Quiz rendering engine... ---
     function renderQuiz() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -618,15 +608,17 @@
 
         const activeQ = qList[qIndex];
 
+        // 題目與關鍵操控元件整體往上提，極速避開手機虛擬鍵盤遮擋
         ctx.fillStyle = '#6C5B7B';
         ctx.font = '700 24px "Noto Sans TC"';
-        ctx.fillText(`【${activeQ.pos}】 ${activeQ.trans}`, 250, 180);
+        ctx.fillText(`【${activeQ.pos}】 ${activeQ.trans}`, 250, 110);
 
-        // 啟用並顯示輸入框 (位置由 CSS 響應式完美控制)
+        // 啟用並顯示輸入框 (百分百由 RWD CSS 靜態對齊定位)
         spellingInput.style.display = 'block';
 
-        drawCuteButton('QZ_SUBMIT', '送出答案', 150, 380, 200, 50, '#FFB7B2', '#FFA4A0', submitSpellingAnswer);
-        drawCuteButton('QZ_EXIT', '放棄測驗', 170, 480, 160, 40, '#C7CEEA', '#B9C2E7', () => {
+        // 送出答案與放棄按鈕向上集中
+        drawCuteButton('QZ_SUBMIT', '送出答案', 150, 260, 200, 48, '#FFB7B2', '#FFA4A0', submitSpellingAnswer);
+        drawCuteButton('QZ_EXIT', '放棄測驗', 170, 325, 160, 40, '#C7CEEA', '#B9C2E7', () => {
             spellingInput.style.display = 'none';
             appState = 'MODE_SELECT';
         });
@@ -659,7 +651,6 @@
         });
     }
 
-    // --- STREAMING_CHUNK: Managing app interactions and game state changes... ---
     function selectLesson(lNum) {
         selectedLesson = lNum;
         appState = 'MODE_SELECT';
@@ -703,13 +694,11 @@
         requestAnimationFrame(animateCardFlip);
     }
 
-    // --- STREAMING_CHUNK: Coding spacing logic for Spaced Repetition (SR)... ---
     function handleFamiliarity(known) {
         if (isAnimating) return;
         let activeWord = fcList[fcIndex];
 
         if (!known) {
-            // 還不熟加權：往後隨機插入 3 到 5 個身位，拉高出現頻率
             let targetPos = fcIndex + Math.floor(Math.random() * 3) + 3;
             if (targetPos > fcList.length) targetPos = fcList.length;
             fcList.splice(targetPos, 0, activeWord);
@@ -720,11 +709,9 @@
             fcIndex++;
         }
 
-        // 當完成全部單字卡時，立即觸發結尾提示 Modal
         if (fcIndex >= fcList.length) {
             playChime(true);
-            // 設回最後一個單字暫存，防止彈出 Modal 前畫面閃爍 blank
-            fcIndex = fcList.length - 1;
+            fcIndex = fcList.length - 1; // 預防畫面前瞻性閃爍
             
             showCuteModal("🎉 太棒了！", "你已經完成這個單元所有的英語單字卡學習囉！", "success", () => {
                 appState = 'MODE_SELECT';
@@ -749,7 +736,6 @@
         setTimeout(() => spellingInput.focus(), 200);
     }
 
-    // --- STREAMING_CHUNK: Validating spelling and handling mistaken items... ---
     function submitSpellingAnswer() {
         let guess = spellingInput.value.trim().toLowerCase();
         let target = qList[qIndex];
@@ -758,7 +744,7 @@
         let targetWord = target.word.toLowerCase();
 
         if (guess === targetClean || guess === targetWord || (guess === 'surf the net' && targetClean === 'surf the internet')) {
-            spawnCelebrationBurst(250, 280);
+            spawnCelebrationBurst(250, 140); // 爆裂粒子位置同步上推
             playChime(true);
 
             if (target.perfectEntry) {
@@ -778,7 +764,6 @@
             playChime(false);
             spellingInput.blur();
             
-            // 提示錯誤並將錯題加入至陣列尾端（直至拼對為止）
             showCuteModal(
                 "🌸 加油加油！", 
                 `拼錯囉！正確答案是：<strong class="text-rose-400 text-lg">${target.word}</strong><br><span class="text-sm text-slate-400">（別擔心，這題會自動排到最後面，讓你再次練習！）</span>`, 
@@ -794,7 +779,6 @@
         }
     }
 
-    // --- STREAMING_CHUNK: Registering mouse & key event listeners... ---
     canvas.addEventListener('click', function(e) {
         let rect = canvas.getBoundingClientRect();
         let scaleX = canvas.width / rect.width;
@@ -819,7 +803,6 @@
         }
     });
 
-    // 啟動背景與繪圖引擎
     initFloatingBackground();
     updateAndDraw();
 </script>
